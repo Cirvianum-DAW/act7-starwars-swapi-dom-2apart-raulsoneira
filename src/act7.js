@@ -16,7 +16,22 @@ async function setMovieHeading(movieId, titleSelector, infoSelector, directorSel
 }
 
 async function initMovieSelect(selector) {
-  
+  const select = document.querySelector(selector);
+
+  const defaultOption = document.createElement('option');
+  defaultOption.value = '';
+  defaultOption.textContent = 'Selecciona una pel·lícula';
+  select.appendChild(defaultOption);
+
+  const movies = await swapi.listMoviesSorted();
+
+  movies.forEach((movie) => {
+    const option = document.createElement('option');
+    option.value = movie.episodeID; // Considerant que l'ID de la pel·lícula és l'episodeID
+    option.textContent = movie.name;
+    select.appendChild(option);
+  });
+
 }
 
 function deleteAllCharacterTokens() {}
