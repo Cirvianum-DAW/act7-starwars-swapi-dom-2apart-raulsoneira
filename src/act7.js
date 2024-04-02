@@ -34,7 +34,50 @@ async function initMovieSelect(selector) {
 
 }
 
-function deleteAllCharacterTokens() {}
+function setMovieSelectCallbacks() {
+  // Obtenim el selector de pel·lícules
+  const movieSelect = document.querySelector('#select-movie');
+
+  // Afegim un event listener per a l'esdeveniment change
+  movieSelect.addEventListener('change', async () => {
+    // Obtenim l'episodeID de la pel·lícula seleccionada
+    const selectedEpisodeID  = movieSelect.value;
+    console.log(selectedEpisodeID);
+
+
+
+    // Obtenim la capçalera de la pel·lícula
+    const titleElement = document.querySelector('.movie__title');
+    const infoElement = document.querySelector('.movie__info');
+    const directorElement = document.querySelector('.movie__director');
+
+    // Si s'ha seleccionat una pel·lícula
+    if (selectedEpisodeID) {
+      try {
+        // Obtenim la informació de la pel·lícula seleccionada
+        const movieInfo = await swapi.getMovieInfo(selectedEpisodeID);
+        //console.log(movieInfo);
+
+        // Actualitzem la capçalera amb la informació de la pel·lícula
+        titleElement.textContent = movieInfo.name;
+        infoElement.textContent = `Episode ${movieInfo.episodeID} - ${movieInfo.release}`;
+        directorElement.textContent = "Director: " + movieInfo.director;
+      } catch (error) {
+        console.error('Error al obtenir la informació de la pel·lícula:', error);
+      }
+    } else {
+      // Si s'ha seleccionat "Selecciona una pel·lícula", buidem la capçalera
+      titleElement.textContent = '';
+      infoElement.textContent = '';
+      directorElement.textContent = '';
+    }
+  });
+}
+
+
+function deleteAllCharacterTokens() {
+  
+}
 
 // EVENT HANDLERS //
 
@@ -44,7 +87,7 @@ async function _createCharacterTokens() {}
 
 function _addDivChild(parent, className, html) {}
 
-function setMovieSelectCallbacks() {}
+
 
 async function _handleOnSelectMovieChanged(event) {}
 
