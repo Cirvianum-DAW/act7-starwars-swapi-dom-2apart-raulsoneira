@@ -1,99 +1,112 @@
 import swapi from './swapi.js';
 
-//Exemple d'inicialització de la llista de pel·lícules. Falten dades!
-async function setMovieHeading(movieId, titleSelector, infoSelector, directorSelector) {
+async function setMovieHeading(
+  movieId,
+  titleSelector,
+  infoSelector,
+  directorSelector
+) {
   // Obtenim els elements del DOM amb QuerySelector
-  const title = document.querySelector(titleSelector);  
-  const info = document.querySelector(infoSelector)
-  const director = document.querySelector(directorSelector)
-
-
-  if (!movieId){
-    title.innerHTML = ''
-    info.innerHTML = ''
-    director.innerHTML = ''
-    return
-  }
+  const title = document.querySelector(titleSelector);
+  const info = document.querySelector(infoSelector);
+  const director = document.querySelector(directorSelector);
   // Obtenim la informació de la pelicula
   const movieInfo = await swapi.getMovieInfo(movieId);
   // Injectem
-  title.innerHTML = movieInfo.name
-  info.innerHTML = `Episode ${movieInfo.episodeID} - ${movieInfo.release}`
-  director.innerHTML = `Director: ${movieInfo.director}`
+  title.innerHTML = movieInfo.name;
+  info.innerHTML = `Episode ${movieInfo.episodeID} - ${movieInfo.release}`;
+  director.innerHTML = `Director: ${movieInfo.director}`;
 }
 
 async function initMovieSelect(selector) {
   // Recuperem les dades del servidor
   const movies = await swapi.listMoviesSorted();
-  //console.log(movies)
-  
-  // Seleccionem el nostre element sobre el que hem d'actuar (menú desplegable "movies")
+  //console.log(movies);
+  // Seleccionem el nostre element sobre el que haurem d'actuar (menú desplegable)
   const select = document.querySelector(selector);
-
-  // Com que el primer element no forma part de la llista de pelis, vaig a fer-ho a mà
-  const option = document.createElement('option')
-  // Inicialitzo amb el valor per defecte que em demanen "Selecciona una pel·lícula"
+  // Com que es tracta d'un select, haurem d'injectar "options" --> https://developer.mozilla.org/es/docs/Web/HTML/Element/select
+  const option = document.createElement('option');
+  // Inicialitzem amb el valor per defecte que ens demanen i injectem
   option.value = '';
-  option.textContent = "Selecciona una pel·lícula" 
+  option.textContent = "Selecciona una pel·lícula";
+  console.log(option)
   select.appendChild(option)
 
-  // Com ho faig per anar passant la resta de pel·lícules?
-  // 'movies' és un array d'objectes per tant: for..of, map, foreach.
   
-  movies.forEach(movie => {
-    const option = document.createElement('option')
-    option.value = _filmIdToEpisodeId(movie.episodeID)
-    option.textContent = movie.name
+  // Ara com ho puc fer per anar posant la resta de pel·lícules... movies és un array amb la info no?
+  // Un for of... o un map?
+  for (const movie of movies){
+    const option = document.createElement('option');
+    option.value = movie.episodeID;
+    option.innerText = movie.name;
     select.appendChild(option)
-  })
+  }
+
+  // O amb un map
+  // movies.map(movie => {
+  //   option.value = movie.episodeID;
+  //   option.innerHTML = movie.name;
+  //   select.appendChild(option.cloneNode(true));
+  // })
+
+  // O amb un forEach
+  // movies.forEach(movie => {
+  //   option.value = movie.episodeID;
+  //   option.innerHTML = movie.name;
+  //   select.appendChild(option.cloneNode(true));
+  // })
+  
 }
 
-// function deleteAllCharacterTokens() {
-   // Ho hem implementat dins del handler -> _handleOnSelectMovieChanged
-// }
-
-function setMovieSelectCallbacks() {
-  // Busquem l'identificador del selector de pel·lícules 
-  const selectMovie = document.querySelector('#select-movie')
-  // Cada vegada que canviem ('change') el valor del selector cridem a la funció _handleOnSelectMovieChanged
-  // Sintaxi: element.addEventListener(event, function)
-  selectMovie.addEventListener('change', _handleOnSelectMovieChanged)
-}
-
-async function addChangeEventToSelectHomeworld() {
-  document.querySelector('.list__characters').innerHTML = '';
-  const planeta = document.querySelector('#select-homeworld');
-  planeta.addEventListener('change', _createCharacterTokens);
+async function deleteAllCharacterTokens() {
+  let listCharacters = document.querySelector('.list__characters');
+  listCharacters.innerHTML = '';
 }
 
 // EVENT HANDLERS //
-async function _createCharacterTokens(event) {
-  document.querySelector('.list__characters').innerHTML = '';
 
-  // Necessitem saber quina pel·licula i quin planeta/homeworld s'han seleccionat! 
-  const idPelicula = document.querySelector('#select-movie').value;
-  //const selectHomeworld = document.querySelector('#select-homeworld').value;
-  
-  // Creem el llistat de personatges que injectarem a la ul del DOM
-  const ul = document.querySelector('.list__characters');
+// Afegim l'event listener a l'element select-homeworld
+function addChangeEventToSelectHomeworld() {
+  let selectHomeworld = document.querySelector('#select-homeworld');
+  selectHomeworld.addEventListener('change', _createCharacterTokens, false);
+}
+
+// CB de l'event listener
+async function _createCharacterTokens() {
+  // Necessitem saber quina pel·lícula i quin planeta s'han seleccionat
+  let selectMovie = document.querySelector('#select-movie');
+  let selectHomeworld = document.querySelector('#select-homeworld');
 
   // Podríem implementar un control d'errors per si no s'ha seleccionat cap pel·lícula o planeta
-
-  if (!idPelicula){
-    throw Error('No movie selected.')
-  }
-
-  // if (!selectHomeworld){
-  //   throw Error('No homeworld selected.')
+  // if (!selectMovie.value) {
+  //   throw Error('No movie selected.');
   // }
 
-  // Obtenim el llistat de 'characters' que ens retorna la pel·lícula que consultem
-  let movieInfo = await swapi.getMovieCharactersAndHomeworlds(idPelicula);
-  
-  let filteredCaracters = movieInfo.characters.filter((caracter) => caracter.homeworld == event.target.value)
-  console.log(filteredCaracters)
-  
-  // Aquesta és l'estructura que hem d'aconseguir:
+  // if (!selectHomeworld.value) {
+  //   throw Error('No homeworld selected.');
+  // }
+
+  // Ens assegurem que no hi ha cap token de personatge
+  await deleteAllCharacterTokens();
+
+  // Creem el llistat de personatges que injectarem a la ul del DOM
+  var ul = document.querySelector('.list__characters');
+
+  // Obtenim les dades de la pel·lícula i els personatges
+  const value = _filmIdToEpisodeId(selectMovie.value);
+  // Obtenim el valor del selector que en aquest cas contindrà el número d'episodi
+
+  let data = await swapi.getMovieCharactersAndHomeworlds(value);
+  // "data.characters" conté un array amb un objecte de tots els personatges de la pel·lícula
+  // recordem que l'objecte personatges conté el planeta d'origen sota el nom: "homeworld". Filtrem doncs:
+  let filteredCharacters = data.characters.filter(
+    (character) => character.homeworld === selectHomeworld.value
+  );
+
+
+  // Ara ja puc iterar sobre els personatge i injectar-los
+  filteredCharacters.map((personatge) => {
+    // Aquesta és l'estructura que hem d'aconseguir:
     // <li class="list__item item character">
     //           <img src="assets/user.svg" class="character__image" />
     //           <h2 class="character__name">Leia Skywalker</h2>
@@ -107,88 +120,119 @@ async function _createCharacterTokens(event) {
     //           </div>
     // </li>
 
-    filteredCaracters.map((personatge)=>{
-      const li = document.createElement('li')
-      //li.className = 'list__item item character',
-      li.classList.add('list__item', 'item', 'character')
-      ul.appendChild(li)
-      // Les imatges les tenim en local. Hem de crear un element "img"
-      const img = document.createElement('img')
+    let li = document.createElement('li');
+    li.className = 'list__item item character';
+    ul.appendChild(li);
+    // Les imatges les tenim en local. Creem un element "img" i li assignem la url de la imatge
+    let img = document.createElement('img');
+
+    //Anem a introduir la imatge del personatge
+    // Imatge real: 
+    // Amb split separem la url per /
+    const urlParts = personatge.url.split('/');
+    const characterNumber = urlParts[urlParts.length - 1];
+    img.src = `/public/assets/people/${characterNumber}.jpg`;
+
+    // Imatge per defecte:
+    //img.src = '/public/assets/user.svg'
+    img.className = 'character__image';
+    img.style.maxWidth = '100%'; // Add this line to set the maximum width to 100%
+    li.appendChild(img);
+
   
-      //Anem a introduir la imatge del personatge:
-      const urlParts = personatge.url.split('/')
-      const characterNumber = urlParts[urlParts.length - 1]
-      // o també: 
-      //const characterNumber = urlPart.pop()
-      img.src = `../public/assets/people/${characterNumber}.jpg`
-      img.className='character__image'
-      img.style.maxWidth='100%'
-      li.appendChild(img)
 
-      // GHhem d'afegir el nom del personatge
-      const h2 = document.createElement('h2')
-      h2.classList.add('character__name')
-      h2.innerHTML = personatge.name;
-      li.appendChild(h2)
+    // Hem d'afegir el nom del personatge... 
+    let h2 = document.createElement('h2');
+    h2.className = 'character__name';
+    h2.innerHTML = personatge.name;
+    li.appendChild(h2);
 
-      // Ara tenim 4 divs que segueixen el mateix patró... podem optimitzar no?
+    // Ara tenim 4 divs que segueixen el mateix patró... podem optimitzar no?
     //           <div class="character__birth">
     //             <strong>Birth Year:</strong> 19 BBY
     //           </div> 
-    
-      // Podem crear una funció auxiliar que ens ajudi --> _addDivChiled
-      // Necessitem passar-li el pare (per saber ON injectar), la classe del div i el contingut
-      
-      _addDivChild(li, 'character__birth', '<strong>Birth Year: </strong>' + personatge.birth_year  )
-      _addDivChild(li, 'character__eye', '<strong>Eye color: </strong>' + personatge.eye_color )
-      _addDivChild(li, 'character__gender', '<strong>Gender: </strong>' + personatge.gender )
-      _addDivChild(li, 'character__home', '<strong>Homeworld: </strong>' + personatge.homeworld )
-    })
+    // En lloc de fer:
+
+    // let div = document.createElement('div');
+    // div.className = 'character__birth';
+    // div.innerHTML = '<strong>Birth Year:</strong> ' + personatge.birth_year;
+    // parent.appendChild(div);
+
+    // Podem crear una funció auxiliar que ens ajudi a fer això --> _addDivChild
+    // Necessitem passar-li el pare (per saber on injectar), la classe del div i el contingut 
+
+    _addDivChild(
+      li,
+      'character__birth',
+      '<strong>Birth Year:</strong> ' + personatge.birth_year
+    );
+    _addDivChild(
+      li,
+      'character__eye',
+      '<strong>Eye color:</strong> ' + personatge.eye_color
+    );
+    _addDivChild(
+      li,
+      'character__gender',
+      '<strong>Gender:</strong> ' + personatge.gender
+    );
+    _addDivChild(
+      li,
+      'character__home',
+      '<strong>Home World:</strong> ' + personatge.homeworld
+    );
+  });
 }
-  
+
 function _addDivChild(parent, className, html) {
-  const div = document.createElement('div')
-  div.className = className
-  div.innerHTML = html
-  parent.appendChild(div)
+  let div = document.createElement('div');
+  div.className = className;
+  div.innerHTML = html;
+  parent.appendChild(div);
 }
 
-
+function setMovieSelectCallbacks() {
+  // Busquem l'identificador del selector de pelicules
+  const selectMovie = document.querySelector('#select-movie');
+  // Cada vegada que canviem ('change') el valor del selector cridem a la funció _handleOnSelectMovieChanged
+  // Sintaxi: element.addEventListener(event, function, useCapture)
+  selectMovie.addEventListener('change', _handleOnSelectMovieChanged, false);
+}
 
 async function _handleOnSelectMovieChanged(event) {
-  // Obtenir el valor del selector que en aquest cas conté l'id de la peli
-  const movieID = event.target.value
-  // Modifiquem la capçalera amb la informació corresponent amb aquesta peli
-  // Si existeix un "target"
-    await setMovieHeading(movieID, '.movie__title', '.movie__info', '.movie__director');
+  // Ex4--> Esborrem l'anterior llistat de planetes i personatges, altrament afegirà a la llista dels ja presents
+    const selectHomeworld = document.querySelector('#select-homeworld');
+  selectHomeworld.innerHTML = '';
+  // Ex4--> I també esborrem els tokens de personatges
+  await deleteAllCharacterTokens();
 
-  // Ex4--> Esborrem l'anterior llistat de planetes
-    const selector = document.querySelector('#select-homeworld');
-    selector.innerHTML = '';
-
+  // Obtenim el valor del selector que en aquest cas contindrà el número d'episodi
+  const episodeID = event.target.value;
+  // Obtenim les dades de la pel·lícula, però compte episodiID != filmID! :(
+  const movieID = _filmIdToEpisodeId(episodeID);
+  
+  const data = await swapi.getMovieInfo(movieID);
+  // Actualitzem el header amb les dades de la pel·lícula
+  _setMovieHeading(data);
   // Ex4 --> Ara pels planetes d'origen necessitem les dades de tots els personatges
-
-  const caracters = await swapi.getMovieCharactersAndHomeworlds(movieID);
-  //  Necessitem d'entrada una llista amb els planetes d'origen dels diferents personatges:
-  const planetes = caracters.characters.map((caracter) => caracter.homeworld);
-
-  // Evitem que apareguin duplicats amb la funció auxiliar
-  const planetesNoDuplicats = _removeDuplicatesAndSort(planetes);
-
-  // Amb la llista ja "neta" (i ordenada alfabèticament), podem cridar a la
-  // funció que actualitza el selector de "homeworlds"
-  _populateHomeWorldSelector(planetesNoDuplicats, selector);;
-
-  document.querySelector('.list__characters').innerHTML = '';
-    
+  const response = await swapi.getMovieCharactersAndHomeworlds(movieID);
+  // Necessitem d'entrada una llista amb els planetes d'origen dels diferents personatges:
+  const homeworlds = response.characters.map(
+    (character) => character.homeworld
+  );
+  // Ens passarà que hi haurà planetes repetits, així que els eliminem i els ordenem alfabèticament
+  // Per si no ho fem en origen, evitem els duplicats i els ordenem alfabèticament
+  const cleanHomeWorlds = _removeDuplicatesAndSort(homeworlds);
+  // Amb la llista ordenada ja podem cridar a la funció que actualitza el selector de "homeworlds"
+  _populateHomeWorldSelector(cleanHomeWorlds);
 }
 
 function _filmIdToEpisodeId(episodeID) {
-  const mapping = episodeToMovieIDs.find(item => item.e === episodeID)
-  if (mapping){
-    return mapping.m
-  } else {
-    return null
+  for (let list in episodeToMovieIDs) {
+    // Com que movieId és un string, fem servir el == per comparar (el valor però no el tipus!)
+    if (episodeToMovieIDs[list].e == episodeID) {
+      return episodeToMovieIDs[list].m;
+    }
   }
 }
 
@@ -208,22 +252,36 @@ let episodeToMovieIDs = [
   { m: 6, e: 3 },
 ];
 
-function _setMovieHeading({ name, episodeID, release, director }) {}
+/**
+ * Esta función actualiza el contenido del header de la aplicación.
+ *
+ * Dada una película se actualiza el html del header con los datos correctos.
+ * En lugar de Jugar con todos los elementos del DOM individualmente sobreescribimos el html
+ * de todo el componente directamente utilizando template literals.
+ */
+function _setMovieHeading({ name, episodeID, release, director }) {
+  const movieHeader = document.querySelector('#movie-header');
 
-function _populateHomeWorldSelector(homeworlds, selector) {
-  //console.log(homeworlds)
-  // Aquí implementem la lògica per "poblar" o injectar els planetes al desplegable "homeworld"
+  movieHeader.innerHTML = `
+        <h2 class="movie__title">${name}</h2>
+        <h4 class="movie__info">Episode ${episodeID} - ${release}</h4>
+        <p class="movie__director">Director: ${director}</p>
+    `;
+}
+
+function _populateHomeWorldSelector(homeworlds) {
+  const selectHomeworld = document.querySelector('#select-homeworld');
+  const option = document.createElement('option');
+  option.innerText="Selecciona un planeta"
+  selectHomeworld.appendChild(option)    
+
+
+  homeworlds.forEach((homeworld) => {
     const option = document.createElement('option');
-    option.value = '';
-    option.textContent = 'Selecciona un homeworld';
-    selector.appendChild(option);
-
-    homeworlds.forEach(planeta => {
-      const option = document.createElement('option');
-      option.value = planeta;
-      option.textContent = planeta;
-      selector.appendChild(option);
-      })
+    option.value = homeworld;
+    option.innerText = homeworld;
+    selectHomeworld.appendChild(option);
+  });
 }
 
 /**
@@ -233,17 +291,25 @@ function _removeDuplicatesAndSort(elements) {
   // Al crear un Set eliminem els duplicats
   const set = new Set(elements);
   // tornem a convertir el Set en un array
-  const array = [...set].sort();
+  const array = Array.from(set);
   // i ordenem alfabèticament
+  array.sort((a, b) => {
+    if (a < b) {
+      return -1;
+    }
+    if (a > b) {
+      return 1;
+    }
+    return 0;
+  });
   return array;
 }
-
 
 const act7 = {
   setMovieHeading,
   setMovieSelectCallbacks,
   initMovieSelect,
-  //deleteAllCharacterTokens,
+  deleteAllCharacterTokens,
   addChangeEventToSelectHomeworld,
 };
 
